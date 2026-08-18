@@ -29,8 +29,8 @@ def load_market_data():
     """
     Load the most recently cached dynamic market-data snapshot.
 
-    Returns an empty DataFrame if the market-data refresh has not
-    yet been run.
+    Returns an empty DataFrame if market data have not yet
+    been refreshed.
     """
 
     path = DATA_DIR / "market_data.csv"
@@ -46,6 +46,56 @@ def load_market_data():
                 "return_1m_pct",
                 "return_3m_pct",
                 "refresh_status",
+            ]
+        )
+
+    return pd.read_csv(path)
+
+
+def load_deep_dives():
+    """
+    Load Stage 2 analyst deep-dive judgments.
+
+    Returns an empty DataFrame when no Stage 2 file exists.
+    """
+
+    path = DATA_DIR / "deep_dives.csv"
+
+    if not path.exists():
+        return pd.DataFrame(
+            columns=[
+                "ticker",
+                "review_status",
+                "core_thesis",
+                "analyst_verdict",
+                "confidence",
+                "last_reviewed",
+            ]
+        )
+
+    return pd.read_csv(path)
+
+
+def load_deep_dive_evidence():
+    """
+    Load the Stage 2 claim-level evidence and
+    fact-vs-inference audit trail.
+    """
+
+    path = DATA_DIR / "deep_dive_evidence.csv"
+
+    if not path.exists():
+        return pd.DataFrame(
+            columns=[
+                "ticker",
+                "claim_area",
+                "claim_type",
+                "source_type",
+                "source_title",
+                "source_date",
+                "source_url",
+                "evidence",
+                "verified",
             ]
         )
 
@@ -106,3 +156,49 @@ def get_market_snapshot(ticker):
         return None
 
     return match.iloc[0]
+
+
+# ================================================================
+# STAGE 2 LOOKUPS
+# ================================================================
+
+def get_deep_dive(ticker):
+    """
+    Return the current Stage 2 analyst assessment
+    for one company.
+    """
+
+    deep_dives = load_deep_dives()
+
+    if deep_dives.empty:
+        return None
+
+    match = deep_dives[
+        deep_dives["ticker"]
+        .astype(str)
+        .str.upper()
+        .eq(str(ticker).upper())
+    ]
+
+    if match.empty:
+        return None
+
+    return match.iloc[0]
+
+
+def get_deep_dive_evidence(ticker):
+    """
+    Return the Stage 2 evidence trail for one company.
+    """
+
+    evidence = load_deep_dive_evidence()
+
+    if evidence.empty:
+        return evidence
+
+    return evidence[
+        evidence["ticker"]
+        .astype(str)
+        .str.upper()
+        .eq(str(ticker).upper())
+    ].copy()

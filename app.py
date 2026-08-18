@@ -8,6 +8,8 @@ from src.data_loader import (
     get_company,
     get_company_sources,
     get_market_snapshot,
+    get_deep_dive,
+    get_deep_dive_evidence,
 )
 
 from src.intelligence import (
@@ -411,6 +413,14 @@ market = get_market_snapshot(
     selected_ticker
 )
 
+deep_dive = get_deep_dive(
+    selected_ticker
+)
+
+deep_dive_evidence = get_deep_dive_evidence(
+    selected_ticker
+)
+
 timing = assess_company(
     company,
     sources,
@@ -641,6 +651,357 @@ st.caption(
     "internal screening thresholds. They are not claimed "
     "industry standards and remain subject to analyst judgment."
 )
+
+
+# ================================================================
+# STAGE 2 OPPORTUNITY DILIGENCE
+# ================================================================
+
+st.divider()
+
+st.markdown(
+    "### Stage 2 Opportunity Diligence"
+)
+
+st.caption(
+    "Human analyst judgment layered on top of the automated "
+    "screen. Facts and analyst inferences are tracked separately."
+)
+
+
+if deep_dive is None:
+
+    st.info(
+        "Stage 2 deep-dive diligence has not yet been "
+        "completed for this company."
+    )
+
+else:
+
+    # ------------------------------------------------------------
+    # REVIEW STATUS
+    # ------------------------------------------------------------
+
+    stage_status1, stage_status2, stage_status3 = st.columns(3)
+
+    with stage_status1:
+        st.markdown("**Review Status**")
+        st.write(
+            clean_text(
+                deep_dive["review_status"]
+            )
+        )
+
+    with stage_status2:
+        st.markdown("**Confidence**")
+        st.write(
+            clean_text(
+                deep_dive["confidence"]
+            )
+        )
+
+    with stage_status3:
+        st.markdown("**Last Reviewed**")
+        st.write(
+            clean_text(
+                deep_dive["last_reviewed"]
+            )
+        )
+
+
+    # ------------------------------------------------------------
+    # CORE THESIS
+    # ------------------------------------------------------------
+
+    st.markdown("#### Core Thesis")
+
+    st.write(
+        clean_text(
+            deep_dive["core_thesis"]
+        )
+    )
+
+
+    # ------------------------------------------------------------
+    # FINANCING THESIS
+    # ------------------------------------------------------------
+
+    financing_left, financing_right = st.columns(2)
+
+    with financing_left:
+        st.markdown("#### Financing Need")
+
+        st.write(
+            clean_text(
+                deep_dive[
+                    "financing_need_view"
+                ]
+            )
+        )
+
+    with financing_right:
+        st.markdown("#### Financing Window")
+
+        st.write(
+            clean_text(
+                deep_dive[
+                    "financing_window_view"
+                ]
+            )
+        )
+
+
+    # ------------------------------------------------------------
+    # CAPITAL MARKETS + CATALYST
+    # ------------------------------------------------------------
+
+    capital_left, capital_right = st.columns(2)
+
+    with capital_left:
+        st.markdown(
+            "#### Capital-Markets Support"
+        )
+
+        st.write(
+            clean_text(
+                deep_dive[
+                    "capital_markets_support_view"
+                ]
+            )
+        )
+
+    with capital_right:
+        st.markdown(
+            "#### Catalyst Quality"
+        )
+
+        st.write(
+            clean_text(
+                deep_dive[
+                    "catalyst_quality_view"
+                ]
+            )
+        )
+
+
+    # ------------------------------------------------------------
+    # 180 FIT + MANAGEMENT
+    # ------------------------------------------------------------
+
+    fit_left, fit_right = st.columns(2)
+
+    with fit_left:
+        st.markdown(
+            "#### 180 Markets Fit"
+        )
+
+        st.write(
+            clean_text(
+                deep_dive[
+                    "fit_180_view"
+                ]
+            )
+        )
+
+    with fit_right:
+        st.markdown(
+            "#### Management / Execution"
+        )
+
+        st.write(
+            clean_text(
+                deep_dive[
+                    "management_execution_view"
+                ]
+            )
+        )
+
+
+    # ------------------------------------------------------------
+    # ANALYST VERDICT
+    # ------------------------------------------------------------
+
+    st.info(
+        "Analyst Verdict: "
+        + clean_text(
+            deep_dive[
+                "analyst_verdict"
+            ]
+        )
+    )
+
+
+    # ------------------------------------------------------------
+    # FULL DILIGENCE
+    # ------------------------------------------------------------
+
+    with st.expander(
+        "Full Stage 2 Diligence",
+        expanded=False,
+    ):
+
+        st.markdown(
+            "##### Likely Use of Proceeds"
+        )
+
+        st.write(
+            clean_text(
+                deep_dive[
+                    "likely_use_of_proceeds_view"
+                ]
+            )
+        )
+
+
+        st.markdown(
+            "##### Plausible Financing Structure"
+        )
+
+        st.write(
+            clean_text(
+                deep_dive[
+                    "plausible_structure_view"
+                ]
+            )
+        )
+
+
+        st.markdown(
+            "##### Raise Size View"
+        )
+
+        st.write(
+            clean_text(
+                deep_dive[
+                    "raise_size_view"
+                ]
+            )
+        )
+
+
+        st.markdown(
+            "##### Previous Brokers / Managers"
+        )
+
+        st.write(
+            clean_text(
+                deep_dive[
+                    "prior_brokers_view"
+                ]
+            )
+        )
+
+
+        st.markdown(
+            "##### Shareholder Register"
+        )
+
+        st.write(
+            clean_text(
+                deep_dive[
+                    "shareholder_register_view"
+                ]
+            )
+        )
+
+
+        st.markdown(
+            "##### Key Risks"
+        )
+
+        st.write(
+            clean_text(
+                deep_dive[
+                    "key_risks"
+                ]
+            )
+        )
+
+
+        st.markdown(
+            "##### Kill Conditions"
+        )
+
+        st.write(
+            clean_text(
+                deep_dive[
+                    "kill_conditions"
+                ]
+            )
+        )
+
+
+        st.markdown(
+            "##### Open Questions"
+        )
+
+        st.write(
+            clean_text(
+                deep_dive[
+                    "open_questions"
+                ]
+            )
+        )
+
+
+    # ------------------------------------------------------------
+    # DEEP-DIVE EVIDENCE TRAIL
+    # ------------------------------------------------------------
+
+    with st.expander(
+        "Deep-Dive Evidence Trail",
+        expanded=False,
+    ):
+
+        if deep_dive_evidence.empty:
+
+            st.write(
+                "No Stage 2 evidence records captured."
+            )
+
+        else:
+
+            stage_evidence_display = deep_dive_evidence[
+                [
+                    "claim_area",
+                    "claim_type",
+                    "evidence",
+                    "verified",
+                    "source_type",
+                    "source_title",
+                    "source_date",
+                    "source_url",
+                ]
+            ].copy()
+
+
+            stage_evidence_display = (
+                stage_evidence_display.rename(
+                    columns={
+                        "claim_area": "Claim Area",
+                        "claim_type": "Claim Type",
+                        "evidence": "Evidence / Basis",
+                        "verified": "Verified",
+                        "source_type": "Source Type",
+                        "source_title": "Source",
+                        "source_date": "Date",
+                        "source_url": "Source URL",
+                    }
+                )
+            )
+
+
+            st.dataframe(
+                stage_evidence_display,
+                width="stretch",
+                hide_index=True,
+            )
+
+
+    st.caption(
+        "Stage 2 conclusions are analyst judgments, not "
+        "predictions that a financing transaction will occur."
+    )
 
 
 # ================================================================
