@@ -275,20 +275,33 @@ def build_flagship_brief(
     # WHY NOW
     # ------------------------------------------------------------
 
-    why_now_parts = [
-        scale_evidence,
-        program_evidence,
-        errabiddy_evidence,
-    ]
+    if ticker == "FAL":
 
-    why_now = " ".join(
-        [
-            item
-            for item
-            in why_now_parts
-            if item
+        why_now = (
+            "Exploration intensity is accelerating: Blue Moon "
+            "mineralisation now extends beyond 850m, three diamond "
+            "rigs are operating continuously, step-out and parallel-"
+            "structure drilling continues, and the approved 3,500m "
+            "maiden RC program at Errabiddy adds another visible "
+            "near-term catalyst."
+        )
+
+    else:
+
+        why_now_parts = [
+            scale_evidence,
+            program_evidence,
+            errabiddy_evidence,
         ]
-    )
+
+        why_now = " ".join(
+            [
+                item
+                for item
+                in why_now_parts
+                if item
+            ]
+        )
 
 
     # ------------------------------------------------------------
@@ -308,11 +321,21 @@ def build_flagship_brief(
     )
 
 
-    financing_position = (
-        f"Falcon currently reports {cash} of cash "
-        f"and {runway} of funding. "
-        f"{_clean(deep_dive.get('financing_need_view'))}"
-    )
+    if ticker == "FAL":
+
+        financing_position = (
+            f"No immediate funding pressure. Falcon reported "
+            f"{cash} cash, nil financing facilities and "
+            f"{runway} of funding at 30 June 2026. "
+            "The current opportunity is therefore early engagement "
+            "rather than an immediate financing call."
+        )
+
+    else:
+
+        financing_position = (
+            f"{_clean(deep_dive.get('financing_need_view'))}"
+        )
 
 
     # ------------------------------------------------------------

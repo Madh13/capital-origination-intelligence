@@ -46,6 +46,10 @@ from src.shortlist import (
     select_flagship,
 )
 
+from src.flagship_brief import (
+    build_flagship_brief,
+)
+
 
 # ================================================================
 # PAGE CONFIGURATION
@@ -154,6 +158,78 @@ shortlist_comparison = build_shortlist_comparison(
 flagship = select_flagship(
     shortlist_comparison
 )
+
+
+# ================================================================
+# BUILD FLAGSHIP ORIGINATION BRIEF
+# ================================================================
+
+flagship_brief = None
+flagship_company = None
+flagship_market = None
+flagship_timing = None
+flagship_fundability = None
+flagship_deep_dive = None
+flagship_evidence = None
+
+
+if flagship is not None:
+
+    flagship_ticker = str(
+        flagship[
+            "ticker"
+        ]
+    ).upper()
+
+
+    flagship_company = get_company(
+        flagship_ticker
+    )
+
+
+    flagship_sources = get_company_sources(
+        flagship_ticker
+    )
+
+
+    flagship_market = get_market_snapshot(
+        flagship_ticker
+    )
+
+
+    flagship_deep_dive = get_deep_dive(
+        flagship_ticker
+    )
+
+
+    flagship_evidence = get_deep_dive_evidence(
+        flagship_ticker
+    )
+
+
+    if flagship_company is not None:
+
+        flagship_timing = assess_company(
+            flagship_company,
+            flagship_sources,
+        )
+
+
+        flagship_fundability = assess_fundability(
+            flagship_company,
+            flagship_market,
+        )
+
+
+        flagship_brief = build_flagship_brief(
+            flagship,
+            flagship_company,
+            flagship_market,
+            flagship_timing,
+            flagship_fundability,
+            flagship_deep_dive,
+            flagship_evidence,
+        )
 
 
 # ================================================================
@@ -674,6 +750,328 @@ else:
 st.caption(
     "Flagship selection is based on transparent origination "
     "conditions, not a predictive financing score or investment ranking."
+)
+
+st.divider()
+
+
+# ================================================================
+# FLAGSHIP ORIGINATION BRIEF
+# ================================================================
+
+st.markdown(
+    "## Flagship Origination Brief"
+)
+
+st.caption(
+    "Executive origination view generated from the flagship "
+    "selection, machine intelligence and Stage 2 analyst diligence."
+)
+
+
+if flagship_brief is None:
+
+    st.info(
+        "No unique flagship brief is currently available."
+    )
+
+else:
+
+    # ------------------------------------------------------------
+    # POSITIONING
+    # ------------------------------------------------------------
+
+    st.success(
+        f"{flagship_brief['ticker']} — "
+        f"{flagship_brief['company']}  |  "
+        f"{flagship_brief['positioning']}"
+    )
+
+
+    st.markdown(
+        "### Origination Thesis"
+    )
+
+    st.write(
+        flagship_brief[
+            "one_line_thesis"
+        ]
+    )
+
+
+    # ------------------------------------------------------------
+    # CORE FLAGSHIP METRICS
+    # ------------------------------------------------------------
+
+    brief1, brief2, brief3, brief4 = st.columns(4)
+
+
+    with brief1:
+
+        st.metric(
+            "Cash",
+            format_money(
+                flagship_company[
+                    "cash_aud_m"
+                ],
+                1,
+            ),
+        )
+
+
+    with brief2:
+
+        st.metric(
+            "Reported Funding",
+            format_quarters(
+                flagship_company[
+                    "reported_quarters_funding"
+                ]
+            ),
+        )
+
+
+    with brief3:
+
+        st.metric(
+            "Fundability",
+            flagship_fundability[
+                "fundability"
+            ],
+        )
+
+
+    with brief4:
+
+        st.metric(
+            "Stage 2 Confidence",
+            flagship_brief[
+                "confidence"
+            ],
+        )
+
+
+    # ------------------------------------------------------------
+    # EXECUTIVE CASE
+    # ------------------------------------------------------------
+
+    brief_left, brief_right = st.columns(2)
+
+
+    with brief_left:
+
+        st.markdown(
+            "#### Why Now"
+        )
+
+        st.write(
+            flagship_brief[
+                "why_now"
+            ]
+        )
+
+
+        st.markdown(
+            "#### Funding Position"
+        )
+
+        st.write(
+            flagship_brief[
+                "funding_position"
+            ]
+        )
+
+
+    with brief_right:
+
+        st.markdown(
+            "#### Origination Action"
+        )
+
+        st.write(
+            flagship_brief[
+                "engagement_case"
+            ]
+        )
+
+
+        st.markdown(
+            "#### Potential 180 Role"
+        )
+
+        st.write(
+            flagship_brief[
+                "potential_180_role"
+            ]
+        )
+
+
+    # ------------------------------------------------------------
+    # ESCALATION TRIGGERS
+    # ------------------------------------------------------------
+
+    st.markdown(
+        "#### Escalate When"
+    )
+
+
+    trigger_columns = st.columns(2)
+
+
+    for index, trigger in enumerate(
+        flagship_brief[
+            "escalation_triggers"
+        ]
+    ):
+
+        with trigger_columns[
+            index % 2
+        ]:
+
+            st.write(
+                f"• {trigger}"
+            )
+
+
+    # ------------------------------------------------------------
+    # CAPITAL MARKETS DETAIL
+    # ------------------------------------------------------------
+
+    with st.expander(
+        "Capital Markets Case",
+        expanded=False,
+    ):
+
+        st.write(
+            flagship_brief[
+                "capital_markets_case"
+            ]
+        )
+
+
+        if flagship_brief[
+            "capital_structure"
+        ]:
+
+            st.markdown(
+                "**Capital Structure**"
+            )
+
+            st.write(
+                flagship_brief[
+                    "capital_structure"
+                ]
+            )
+
+
+    # ------------------------------------------------------------
+    # DILIGENCE / RISKS
+    # ------------------------------------------------------------
+
+    with st.expander(
+        "Risks and Questions to Resolve",
+        expanded=False,
+    ):
+
+        risk_left, risk_right = st.columns(2)
+
+
+        with risk_left:
+
+            st.markdown(
+                "##### Key Risks"
+            )
+
+            st.write(
+                flagship_brief[
+                    "key_risks"
+                ]
+            )
+
+
+        with risk_right:
+
+            st.markdown(
+                "##### Questions to Resolve"
+            )
+
+
+            for question in flagship_brief[
+                "diligence_questions"
+            ]:
+
+                st.write(
+                    f"• {question}"
+                )
+
+
+    # ------------------------------------------------------------
+    # EVIDENCE
+    # ------------------------------------------------------------
+
+    with st.expander(
+        "Flagship Evidence Trail",
+        expanded=False,
+    ):
+
+        if (
+            flagship_evidence is None
+            or flagship_evidence.empty
+        ):
+
+            st.write(
+                "No flagship evidence records available."
+            )
+
+        else:
+
+            evidence_display = flagship_evidence[
+                [
+                    "claim_area",
+                    "claim_type",
+                    "source_type",
+                    "source_date",
+                    "evidence",
+                    "verified",
+                ]
+            ].copy()
+
+
+            evidence_display = evidence_display.rename(
+                columns={
+                    "claim_area": "Claim Area",
+                    "claim_type": "Type",
+                    "source_type": "Source",
+                    "source_date": "Date",
+                    "evidence": "Evidence",
+                    "verified": "Primary Verified",
+                }
+            )
+
+
+            st.dataframe(
+                evidence_display,
+                width="stretch",
+                hide_index=True,
+            )
+
+
+    # ------------------------------------------------------------
+    # GUARDRAIL
+    # ------------------------------------------------------------
+
+    st.warning(
+        "**Analytical guardrail:** "
+        + flagship_brief[
+            "do_not_claim"
+        ]
+    )
+
+
+st.caption(
+    "The flagship brief is an origination-research output. "
+    "It is not an investment recommendation or a prediction "
+    "that a financing event will occur."
 )
 
 st.divider()
