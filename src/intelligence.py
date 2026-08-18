@@ -350,16 +350,6 @@ def build_diligence_gaps(
 
     gaps = []
 
-    liquidity = _safe_float(
-        company.get("avg_daily_value_traded_aud_m")
-    )
-
-    if liquidity is None:
-        gaps.append(
-            "Liquidity is not yet captured, so fundability is "
-            "not fully assessed."
-        )
-
     if financing_recency["label"] == "UNKNOWN":
         gaps.append(
             "Recent financing history requires additional diligence."

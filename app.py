@@ -4,13 +4,19 @@ import streamlit as st
 from src.data_loader import (
     load_companies,
     load_sources,
+    load_market_data,
     get_company,
     get_company_sources,
+    get_market_snapshot,
 )
 
 from src.intelligence import (
     assess_company,
-    assess_universe,
+)
+
+from src.fundability import (
+    assess_fundability,
+    integrate_origination_view,
 )
 
 
@@ -26,28 +32,35 @@ st.set_page_config(
 
 
 # ================================================================
-# HELPER FUNCTIONS
+# FORMATTERS
 # ================================================================
 
 def format_money(value, decimals=1):
     if pd.isna(value):
         return "Not available"
 
-    return f"A${value:.{decimals}f}m"
+    return f"A${float(value):.{decimals}f}m"
 
 
 def format_price(value):
     if pd.isna(value):
         return "Not available"
 
-    return f"A${value:.3f}"
+    return f"A${float(value):.3f}"
 
 
 def format_quarters(value):
     if pd.isna(value):
         return "Not available"
 
-    return f"{value:.2f} quarters"
+    return f"{float(value):.2f} quarters"
+
+
+def format_return(value):
+    if pd.isna(value):
+        return "Not available"
+
+    return f"{float(value):+.2f}%"
 
 
 def clean_text(value, fallback="Not available"):
@@ -56,27 +69,88 @@ def clean_text(value, fallback="Not available"):
 
     text = str(value).strip()
 
-    if not text:
-        return fallback
-
-    return text
+    return text if text else fallback
 
 
 # ================================================================
-# LOAD DATA + INTELLIGENCE
+# LOAD DATA
 # ================================================================
 
 companies = load_companies()
 all_sources = load_sources()
+market_data = load_market_data()
 
 if companies.empty:
-    st.error("No companies found in the screening universe.")
+    st.error("No companies found.")
     st.stop()
 
 
-universe_intelligence = assess_universe(
-    companies,
-    all_sources,
+# ================================================================
+# BUILD UNIVERSE INTELLIGENCE
+# ================================================================
+
+universe_rows = []
+
+for _, company_row in companies.iterrows():
+    ticker = company_row["ticker"]
+
+    company_sources = all_sources[
+        all_sources["ticker"] == ticker
+    ]
+
+    market_match = market_data[
+        market_data["ticker"] == ticker
+    ]
+
+    market_row = (
+        market_match.iloc[0]
+        if not market_match.empty
+        else None
+    )
+
+    timing = assess_company(
+        company_row,
+        company_sources,
+    )
+
+    fundability = assess_fundability(
+        company_row,
+        market_row,
+    )
+
+    integrated = integrate_origination_view(
+        timing,
+        fundability,
+    )
+
+    universe_rows.append(
+        {
+            "ticker": ticker,
+            "company_name": company_row[
+                "company_name"
+            ],
+            "commodity": company_row[
+                "commodity"
+            ],
+            "reported_funding": company_row[
+                "reported_quarters_funding"
+            ],
+            "funding_timing": timing[
+                "funding_timing"
+            ],
+            "liquidity": fundability[
+                "liquidity"
+            ],
+            "fundability": fundability[
+                "fundability"
+            ],
+            "integrated_view": integrated,
+        }
+    )
+
+
+universe_intelligence = pd.DataFrame(
+    universe_rows
 )
 
 
@@ -99,7 +173,9 @@ st.caption(
 with st.sidebar:
     st.header("Company Review")
 
-    company_options = companies.sort_values("ticker").copy()
+    company_options = companies.sort_values(
+        "ticker"
+    ).copy()
 
     company_options["selector_label"] = (
         company_options["ticker"]
@@ -113,21 +189,21 @@ with st.sidebar:
     )
 
     selected_ticker = company_options.loc[
-        company_options["selector_label"] == selected_label,
+        company_options["selector_label"]
+        == selected_label,
         "ticker",
     ].iloc[0]
 
     st.divider()
 
     st.caption(
-        "Select a company to review its funding position, "
-        "catalysts, preliminary origination intelligence "
-        "and supporting evidence."
+        "Review funding timing, market fundability, "
+        "catalysts and supporting evidence."
     )
 
 
 # ================================================================
-# UNIVERSE SUMMARY
+# SCREENING UNIVERSE
 # ================================================================
 
 st.markdown("## Screening Universe")
@@ -142,8 +218,13 @@ with summary1:
 
 with summary2:
     st.metric(
-        "Commodity Profiles",
-        companies["commodity"].nunique(),
+        "Market Feeds",
+        int(
+            (
+                market_data["refresh_status"]
+                == "SUCCESS"
+            ).sum()
+        ),
     )
 
 with summary3:
@@ -155,55 +236,18 @@ with summary3:
 with summary4:
     st.metric(
         "Verified Evidence",
-        int(all_sources["verified"].sum()),
+        int(
+            all_sources["verified"].sum()
+        ),
     )
 
 
-# ================================================================
-# UNIVERSE TABLE + INTELLIGENCE
-# ================================================================
+universe_display = universe_intelligence.copy()
 
-universe_display = companies[
-    [
-        "ticker",
-        "company_name",
-        "commodity",
-        "market_cap_aud_m",
-        "cash_aud_m",
-        "reported_quarters_funding",
-        "next_catalyst",
-    ]
-].copy()
-
-
-universe_display = universe_display.merge(
-    universe_intelligence[
-        [
-            "ticker",
-            "funding_timing",
-            "data_confidence",
-            "opportunity_timing",
-        ]
-    ],
-    on="ticker",
-    how="left",
-)
-
-
-universe_display["market_cap_aud_m"] = universe_display[
-    "market_cap_aud_m"
-].apply(
-    lambda x: format_money(x, 1)
-)
-
-universe_display["cash_aud_m"] = universe_display[
-    "cash_aud_m"
-].apply(
-    lambda x: format_money(x, 3)
-)
-
-universe_display["reported_quarters_funding"] = universe_display[
-    "reported_quarters_funding"
+universe_display[
+    "reported_funding"
+] = universe_display[
+    "reported_funding"
 ].apply(
     format_quarters
 )
@@ -214,13 +258,11 @@ universe_display = universe_display.rename(
         "ticker": "Ticker",
         "company_name": "Company",
         "commodity": "Commodity",
-        "market_cap_aud_m": "Market Cap",
-        "cash_aud_m": "Cash",
-        "reported_quarters_funding": "Reported Funding",
-        "next_catalyst": "Next Catalyst",
+        "reported_funding": "Reported Funding",
         "funding_timing": "Funding Timing",
-        "data_confidence": "Data Confidence",
-        "opportunity_timing": "Preliminary Timing",
+        "liquidity": "Liquidity",
+        "fundability": "Fundability",
+        "integrated_view": "Integrated Origination View",
     }
 )
 
@@ -233,27 +275,41 @@ st.dataframe(
 
 
 st.caption(
-    "Preliminary timing categories are transparent screening "
-    "heuristics for analyst review. They are not predictions "
-    "of a capital raising or rankings of investment attractiveness."
+    "The integrated view combines financing timing "
+    "with preliminary public-market fundability. "
+    "It is not an investment recommendation or prediction."
 )
 
 
 # ================================================================
-# SELECTED COMPANY
+# SELECT COMPANY
 # ================================================================
 
-company = get_company(selected_ticker)
-sources = get_company_sources(selected_ticker)
+company = get_company(
+    selected_ticker
+)
 
-if company is None:
-    st.error("Selected company could not be loaded.")
-    st.stop()
+sources = get_company_sources(
+    selected_ticker
+)
 
+market = get_market_snapshot(
+    selected_ticker
+)
 
-assessment = assess_company(
+timing = assess_company(
     company,
     sources,
+)
+
+fundability = assess_fundability(
+    company,
+    market,
+)
+
+integrated_view = integrate_origination_view(
+    timing,
+    fundability,
 )
 
 
@@ -265,109 +321,211 @@ st.divider()
 # ================================================================
 
 st.markdown(
-    f"## {company['company_name']} ({company['ticker']})"
+    f"## {company['company_name']} "
+    f"({company['ticker']})"
 )
 
 st.caption(
     f"{clean_text(company['sector'])} • "
     f"{clean_text(company['commodity'])} • "
-    f"Data compiled as of {clean_text(company['data_as_of'])}"
+    f"Research compiled as of "
+    f"{clean_text(company['data_as_of'])}"
 )
 
 
 # ================================================================
-# KEY MARKET + FUNDING METRICS
+# CORE METRICS
 # ================================================================
+
+latest_price = (
+    market["latest_price_aud"]
+    if market is not None
+    else company["share_price_aud"]
+)
 
 metric1, metric2, metric3, metric4 = st.columns(4)
 
 with metric1:
     st.metric(
-        "Share Price",
-        format_price(company["share_price_aud"]),
+        "Latest Market Price",
+        format_price(latest_price),
     )
 
 with metric2:
     st.metric(
-        "Market Cap",
-        format_money(company["market_cap_aud_m"], 1),
+        "Reference Market Cap",
+        format_money(
+            company["market_cap_aud_m"],
+            1,
+        ),
     )
 
 with metric3:
     st.metric(
         "Cash",
-        format_money(company["cash_aud_m"], 3),
+        format_money(
+            company["cash_aud_m"],
+            3,
+        ),
     )
 
 with metric4:
     st.metric(
         "Reported Funding",
         format_quarters(
-            company["reported_quarters_funding"]
+            company[
+                "reported_quarters_funding"
+            ]
         ),
     )
 
 
+if market is not None:
+    st.caption(
+        "Market data refreshed through "
+        f"{market['latest_market_date']}. "
+        "Reference market capitalisation remains "
+        "the sourced company snapshot."
+    )
+
+
 # ================================================================
-# ORIGINATION INTELLIGENCE
+# INTEGRATED ORIGINATION INTELLIGENCE
 # ================================================================
 
-st.markdown("### Origination Intelligence")
+st.markdown(
+    "### Integrated Origination Intelligence"
+)
 
 intel1, intel2, intel3, intel4 = st.columns(4)
 
 with intel1:
     st.metric(
         "Funding Timing",
-        assessment["funding_timing"],
+        timing["funding_timing"],
     )
 
 with intel2:
     st.metric(
-        "Catalyst Visibility",
-        assessment["catalyst_visibility"],
+        "Fundability",
+        fundability["fundability"],
     )
 
 with intel3:
     st.metric(
-        "Financing Recency",
-        assessment["financing_recency"],
+        "Catalyst Visibility",
+        timing["catalyst_visibility"],
     )
 
 with intel4:
     st.metric(
         "Data Confidence",
-        assessment["data_confidence"],
+        timing["data_confidence"],
     )
 
 
 st.info(
-    "Preliminary Opportunity Timing: "
-    f"{assessment['opportunity_timing']}"
+    "Integrated Origination View: "
+    f"{integrated_view}"
 )
 
 
-intelligence_left, intelligence_right = st.columns(2)
+# ================================================================
+# MARKET FUNDABILITY
+# ================================================================
 
-with intelligence_left:
+st.markdown(
+    "### Market Fundability"
+)
+
+market1, market2, market3, market4 = st.columns(4)
+
+if market is not None:
+
+    with market1:
+        st.metric(
+            "20D Avg Daily Value",
+            format_money(
+                market[
+                    "avg_daily_value_traded_20d_aud_m"
+                ],
+                3,
+            ),
+        )
+
+    with market2:
+        st.metric(
+            "1M Price Change",
+            format_return(
+                market["return_1m_pct"]
+            ),
+        )
+
+    with market3:
+        st.metric(
+            "3M Price Change",
+            format_return(
+                market["return_3m_pct"]
+            ),
+        )
+
+    with market4:
+        st.metric(
+            "Prior Raise Access",
+            fundability[
+                "prior_raise_access"
+            ],
+        )
+
+else:
+    st.warning(
+        "No refreshed market data are currently "
+        "available for this company."
+    )
+
+
+# ================================================================
+# EXPLAINABILITY
+# ================================================================
+
+explain_left, explain_right = st.columns(2)
+
+with explain_left:
     st.markdown("#### Why It Surfaced")
 
-    for reason in assessment["reasons"]:
-        st.write(f"• {reason}")
+    for reason in timing["reasons"]:
+        st.write(
+            f"• {reason}"
+        )
+
+    for reason in fundability["reasons"]:
+        st.write(
+            f"• {reason}"
+        )
 
 
-with intelligence_right:
+with explain_right:
     st.markdown("#### Diligence Required")
 
-    for gap in assessment["diligence_gaps"]:
-        st.write(f"• {gap}")
+    combined_gaps = (
+        timing["diligence_gaps"]
+        + fundability["diligence_gaps"]
+    )
+
+    seen = set()
+
+    for gap in combined_gaps:
+        if gap not in seen:
+            st.write(
+                f"• {gap}"
+            )
+            seen.add(gap)
 
 
 st.caption(
-    "This first intelligence layer evaluates timing, catalyst "
-    "visibility, financing recency and evidence confidence. "
-    "Complete fundability analysis will require additional "
-    "market-liquidity and trading inputs."
+    "Prototype fundability categories use transparent "
+    "internal screening thresholds. They are not claimed "
+    "industry standards and remain subject to analyst judgment."
 )
 
 
@@ -375,10 +533,12 @@ st.caption(
 # PROGRAM + CATALYST
 # ================================================================
 
-research_left, research_right = st.columns(2)
+program_left, program_right = st.columns(2)
 
-with research_left:
-    st.markdown("### Planned Program")
+with program_left:
+    st.markdown(
+        "### Planned Program"
+    )
 
     st.write(
         clean_text(
@@ -388,8 +548,10 @@ with research_left:
     )
 
 
-with research_right:
-    st.markdown("### Next Catalyst")
+with program_right:
+    st.markdown(
+        "### Next Catalyst"
+    )
 
     st.write(
         clean_text(
@@ -398,14 +560,14 @@ with research_right:
         )
     )
 
-    catalyst_timing = clean_text(
+    timing_text = clean_text(
         company["catalyst_timing"],
         "",
     )
 
-    if catalyst_timing:
+    if timing_text:
         st.caption(
-            f"Timing: {catalyst_timing}"
+            f"Timing: {timing_text}"
         )
 
 
@@ -413,29 +575,35 @@ with research_right:
 # FUNDING POSITION
 # ================================================================
 
-st.markdown("### Funding Position")
+st.markdown(
+    "### Funding Position"
+)
 
-funding1, funding2, funding3, funding4 = st.columns(4)
+fund1, fund2, fund3, fund4 = st.columns(4)
 
-with funding1:
+with fund1:
     st.metric(
         "Quarterly Operating Cash Flow",
         format_money(
-            company["quarterly_operating_cf_aud_m"],
+            company[
+                "quarterly_operating_cf_aud_m"
+            ],
             3,
         ),
     )
 
-with funding2:
+with fund2:
     st.metric(
         "Exploration / Development Spend",
         format_money(
-            company["exploration_development_spend_aud_m"],
+            company[
+                "exploration_development_spend_aud_m"
+            ],
             3,
         ),
     )
 
-with funding3:
+with fund3:
     st.metric(
         "Debt",
         format_money(
@@ -444,11 +612,13 @@ with funding3:
         ),
     )
 
-with funding4:
+with fund4:
     st.metric(
         "Finance Facilities",
         format_money(
-            company["finance_facilities_aud_m"],
+            company[
+                "finance_facilities_aud_m"
+            ],
             2,
         ),
     )
@@ -466,73 +636,36 @@ if facility_notes:
 
 
 # ================================================================
-# RECENT FINANCING
-# ================================================================
-
-st.markdown("### Recent Financing")
-
-raise_amount = company["last_raise_amount_aud_m"]
-raise_price = company["last_raise_price_aud"]
-raise_type = company["last_raise_type"]
-raise_date = company["last_raise_date"]
-
-if (
-    pd.notna(raise_amount)
-    and pd.notna(raise_price)
-    and pd.notna(raise_type)
-    and pd.notna(raise_date)
-):
-    raise_text = (
-        f"Last recorded raise: "
-        f"A${raise_amount:.1f}m "
-        f"{raise_type} at "
-        f"A${raise_price:.2f} per share "
-        f"on {raise_date}."
-    )
-
-    st.text(raise_text)
-
-else:
-    st.write(
-        "No complete recent financing record captured."
-    )
-
-
-lead_manager = clean_text(
-    company["lead_manager"],
-    "",
-)
-
-if lead_manager:
-    st.caption(
-        f"Lead manager / broker: {lead_manager}"
-    )
-
-
-# ================================================================
 # EVIDENCE LEDGER
 # ================================================================
 
-st.markdown("### Evidence Ledger")
+st.markdown(
+    "### Evidence Ledger"
+)
 
-verified_count = int(sources["verified"].sum())
-unverified_count = len(sources) - verified_count
+verified_count = int(
+    sources["verified"].sum()
+)
 
-evidence1, evidence2, evidence3 = st.columns(3)
+unverified_count = (
+    len(sources) - verified_count
+)
 
-with evidence1:
+ev1, ev2, ev3 = st.columns(3)
+
+with ev1:
     st.metric(
         "Evidence Records",
         len(sources),
     )
 
-with evidence2:
+with ev2:
     st.metric(
         "Verified",
         verified_count,
     )
 
-with evidence3:
+with ev3:
     st.metric(
         "Awaiting Verification",
         unverified_count,
@@ -582,5 +715,6 @@ st.caption(
     "Capital Origination Intelligence is a public-data "
     "origination-support research prototype. "
     "It does not provide investment recommendations "
-    "or predict that a company will undertake a capital raising."
+    "or predict that a company will undertake a "
+    "capital raising."
 )
