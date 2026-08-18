@@ -25,7 +25,6 @@ st.set_page_config(
 # ================================================================
 
 def format_money(value, decimals=1):
-    """Format a numeric value stored in AUD millions."""
     if pd.isna(value):
         return "Not available"
 
@@ -33,7 +32,6 @@ def format_money(value, decimals=1):
 
 
 def format_price(value):
-    """Format an AUD share price."""
     if pd.isna(value):
         return "Not available"
 
@@ -41,15 +39,13 @@ def format_price(value):
 
 
 def format_quarters(value):
-    """Format reported quarters of funding."""
     if pd.isna(value):
         return "Not available"
 
-    return f"{value:.1f} quarters"
+    return f"{value:.2f} quarters"
 
 
 def clean_text(value, fallback="Not available"):
-    """Return readable text for optional fields."""
     if pd.isna(value):
         return fallback
 
@@ -127,29 +123,18 @@ st.markdown("## Screening Universe")
 summary1, summary2, summary3, summary4 = st.columns(4)
 
 with summary1:
-    st.metric(
-        "Companies Screened",
-        len(companies),
-    )
+    st.metric("Companies Screened", len(companies))
 
 with summary2:
-    st.metric(
-        "Commodities",
-        companies["commodity"].nunique(),
-    )
+    st.metric("Commodities", companies["commodity"].nunique())
 
 with summary3:
-    st.metric(
-        "Evidence Records",
-        len(all_sources),
-    )
+    st.metric("Evidence Records", len(all_sources))
 
 with summary4:
-    verified_total = int(all_sources["verified"].sum())
-
     st.metric(
         "Verified Evidence",
-        verified_total,
+        int(all_sources["verified"].sum()),
     )
 
 
@@ -177,13 +162,11 @@ universe_display["market_cap_aud_m"] = universe_display[
     lambda x: format_money(x, 1)
 )
 
-
 universe_display["cash_aud_m"] = universe_display[
     "cash_aud_m"
 ].apply(
     lambda x: format_money(x, 3)
 )
-
 
 universe_display["reported_quarters_funding"] = universe_display[
     "reported_quarters_funding"
@@ -214,7 +197,7 @@ st.dataframe(
 
 
 st.caption(
-    "The screening universe is intended to support analyst review. "
+    "The screening universe supports analyst review. "
     "It is not a ranking of investment attractiveness."
 )
 
@@ -326,7 +309,7 @@ with research_right:
 
 st.markdown("### Funding Position")
 
-funding1, funding2, funding3 = st.columns(3)
+funding1, funding2, funding3, funding4 = st.columns(4)
 
 with funding1:
     st.metric(
@@ -348,11 +331,31 @@ with funding2:
 
 with funding3:
     st.metric(
-        "Debt / Facilities",
+        "Debt",
         format_money(
-            company["debt_facilities_aud_m"],
+            company["debt_aud_m"],
             1,
         ),
+    )
+
+with funding4:
+    st.metric(
+        "Finance Facilities",
+        format_money(
+            company["finance_facilities_aud_m"],
+            2,
+        ),
+    )
+
+
+facility_notes = clean_text(
+    company["facility_notes"],
+    "",
+)
+
+if facility_notes:
+    st.caption(
+        f"Facilities note: {facility_notes}"
     )
 
 
@@ -366,7 +369,6 @@ raise_amount = company["last_raise_amount_aud_m"]
 raise_price = company["last_raise_price_aud"]
 raise_type = company["last_raise_type"]
 raise_date = company["last_raise_date"]
-
 
 if (
     pd.notna(raise_amount)
@@ -413,16 +415,10 @@ unverified_count = len(sources) - verified_count
 evidence1, evidence2, evidence3 = st.columns(3)
 
 with evidence1:
-    st.metric(
-        "Evidence Records",
-        len(sources),
-    )
+    st.metric("Evidence Records", len(sources))
 
 with evidence2:
-    st.metric(
-        "Verified",
-        verified_count,
-    )
+    st.metric("Verified", verified_count)
 
 with evidence3:
     st.metric(
