@@ -62,6 +62,719 @@ st.set_page_config(
 )
 
 
+
+# ================================================================
+# VISUAL DESIGN SYSTEM
+# ================================================================
+
+st.markdown(
+    """
+    <style>
+
+    /* ============================================================
+       CORE PALETTE / APP
+       ============================================================ */
+
+    :root {
+        --coi-navy: #0B1739;
+        --coi-navy-2: #142B59;
+        --coi-blue: #2563EB;
+        --coi-blue-bright: #3B82F6;
+        --coi-sky: #60A5FA;
+        --coi-ink: #14213D;
+        --coi-muted: #6B778C;
+        --coi-border: #DCE6F1;
+        --coi-surface: #FFFFFF;
+        --coi-soft: #F5F8FC;
+        --coi-soft-blue: #EDF5FF;
+    }
+
+
+    html,
+    body,
+    [class*="css"] {
+        font-family:
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            Roboto,
+            Helvetica,
+            Arial,
+            sans-serif;
+    }
+
+
+    [data-testid="stAppViewContainer"] {
+        background:
+            radial-gradient(
+                circle at 85% 0%,
+                rgba(96, 165, 250, 0.12) 0%,
+                rgba(245, 248, 252, 0) 27%
+            ),
+            #F5F8FC;
+    }
+
+
+    [data-testid="stHeader"] {
+        background:
+            rgba(245, 248, 252, 0.84);
+        backdrop-filter: blur(12px);
+    }
+
+
+    .block-container {
+        max-width: 1440px;
+        padding-top: 2rem;
+        padding-bottom: 4rem;
+    }
+
+
+    /* ============================================================
+       HERO
+       ============================================================ */
+
+    .coi-hero {
+        position: relative;
+        overflow: hidden;
+
+        padding:
+            38px
+            40px
+            36px
+            40px;
+
+        margin:
+            4px
+            0
+            18px
+            0;
+
+        border-radius: 22px;
+
+        background:
+            radial-gradient(
+                circle at 90% 10%,
+                rgba(96, 165, 250, 0.38),
+                rgba(96, 165, 250, 0) 31%
+            ),
+            linear-gradient(
+                128deg,
+                #09142F 0%,
+                #102653 58%,
+                #135FC9 100%
+            );
+
+        box-shadow:
+            0 20px 55px
+            rgba(11, 23, 57, 0.20);
+    }
+
+
+    .coi-eyebrow {
+        margin-bottom: 12px;
+
+        color: #83BBFF;
+
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+    }
+
+
+    .coi-hero-title {
+        margin: 0;
+
+        color: #FFFFFF;
+
+        font-size: clamp(
+            34px,
+            4vw,
+            54px
+        );
+
+        font-weight: 780;
+
+        letter-spacing: -0.045em;
+
+        line-height: 1.02;
+    }
+
+
+    .coi-hero-subtitle {
+        margin-top: 15px;
+
+        color: #FFFFFF;
+
+        font-size: 20px;
+        font-weight: 650;
+
+        letter-spacing: -0.015em;
+    }
+
+
+    .coi-hero-copy {
+        max-width: 820px;
+
+        margin-top: 9px;
+
+        color: rgba(
+            255,
+            255,
+            255,
+            0.74
+        );
+
+        font-size: 15.5px;
+        line-height: 1.6;
+    }
+
+
+    .coi-badge-row {
+        display: flex;
+
+        flex-wrap: wrap;
+
+        gap: 8px;
+
+        margin-top: 22px;
+    }
+
+
+    .coi-badge {
+        padding:
+            7px
+            11px;
+
+        border:
+            1px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.17
+            );
+
+        border-radius: 999px;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.08
+            );
+
+        color:
+            rgba(
+                255,
+                255,
+                255,
+                0.88
+            );
+
+        font-size: 11px;
+        font-weight: 700;
+
+        letter-spacing: 0.035em;
+    }
+
+
+    /* ============================================================
+       WORKFLOW STRIP
+       ============================================================ */
+
+    .coi-flow {
+        display: grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap: 12px;
+
+        margin:
+            14px
+            0
+            28px
+            0;
+    }
+
+
+    .coi-flow-card {
+        position: relative;
+
+        padding:
+            16px
+            17px;
+
+        border:
+            1px solid
+            #DDE7F1;
+
+        border-radius: 14px;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.94
+            );
+
+        box-shadow:
+            0 6px 20px
+            rgba(
+                20,
+                33,
+                61,
+                0.055
+            );
+    }
+
+
+    .coi-flow-number {
+        display: block;
+
+        margin-bottom: 5px;
+
+        color: #3B82F6;
+
+        font-size: 11px;
+        font-weight: 800;
+
+        letter-spacing: 0.08em;
+    }
+
+
+    .coi-flow-title {
+        display: block;
+
+        color: #14213D;
+
+        font-size: 13px;
+        font-weight: 800;
+
+        letter-spacing: 0.06em;
+    }
+
+
+    .coi-flow-copy {
+        display: block;
+
+        margin-top: 3px;
+
+        color: #748196;
+
+        font-size: 11.5px;
+    }
+
+
+    /* ============================================================
+       TYPOGRAPHY
+       ============================================================ */
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5 {
+        color: #14213D;
+
+        letter-spacing: -0.025em;
+    }
+
+
+    h2 {
+        margin-top: 1.5rem !important;
+    }
+
+
+    h2::before {
+        content: "";
+
+        display: inline-block;
+
+        width: 5px;
+        height: 27px;
+
+        margin-right: 11px;
+
+        border-radius: 99px;
+
+        background:
+            linear-gradient(
+                180deg,
+                #60A5FA,
+                #2563EB
+            );
+
+        vertical-align: -3px;
+    }
+
+
+    p {
+        line-height: 1.58;
+    }
+
+
+    /* ============================================================
+       METRIC CARDS
+       ============================================================ */
+
+    [data-testid="stMetric"] {
+        min-height: 108px;
+
+        padding:
+            15px
+            17px;
+
+        border:
+            1px solid
+            #DDE7F1;
+
+        border-top:
+            3px solid
+            #3B82F6;
+
+        border-radius: 14px;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.95
+            );
+
+        box-shadow:
+            0 7px 22px
+            rgba(
+                20,
+                33,
+                61,
+                0.055
+            );
+
+        transition:
+            transform
+            0.18s ease,
+            box-shadow
+            0.18s ease;
+    }
+
+
+    [data-testid="stMetric"]:hover {
+        transform:
+            translateY(-1px);
+
+        box-shadow:
+            0 11px 28px
+            rgba(
+                20,
+                33,
+                61,
+                0.09
+            );
+    }
+
+
+    [data-testid="stMetricLabel"] {
+        color:
+            #6E7C91
+            !important;
+
+        font-size:
+            12px
+            !important;
+
+        font-weight:
+            700
+            !important;
+    }
+
+
+    [data-testid="stMetricValue"] {
+        color:
+            #0F1C38
+            !important;
+
+        font-weight:
+            720
+            !important;
+
+        letter-spacing:
+            -0.025em;
+    }
+
+
+    /* ============================================================
+       EXPANDERS
+       ============================================================ */
+
+    [data-testid="stExpander"] {
+        overflow: hidden;
+
+        border:
+            1px solid
+            #DDE6F0
+            !important;
+
+        border-radius:
+            13px
+            !important;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.88
+            );
+
+        box-shadow:
+            0 5px 18px
+            rgba(
+                20,
+                33,
+                61,
+                0.04
+            );
+    }
+
+
+    [data-testid="stExpander"]:hover {
+        border-color:
+            #B9CDE6
+            !important;
+    }
+
+
+    /* ============================================================
+       ALERTS
+       ============================================================ */
+
+    div[data-testid="stAlert"] {
+        border-radius:
+            14px;
+
+        box-shadow:
+            0 5px 16px
+            rgba(
+                20,
+                33,
+                61,
+                0.035
+            );
+    }
+
+
+    /* ============================================================
+       DATAFRAMES
+       ============================================================ */
+
+    [data-testid="stDataFrame"] {
+        overflow: hidden;
+
+        border-radius:
+            13px;
+
+        box-shadow:
+            0 6px 20px
+            rgba(
+                20,
+                33,
+                61,
+                0.05
+            );
+    }
+
+
+    /* ============================================================
+       SELECTBOXES
+       ============================================================ */
+
+    div[data-baseweb="select"] > div {
+        border-radius:
+            11px
+            !important;
+
+        border-color:
+            #C9D7E8
+            !important;
+
+        background:
+            #FFFFFF
+            !important;
+    }
+
+
+    div[data-baseweb="select"] > div:focus-within {
+        border-color:
+            #3B82F6
+            !important;
+
+        box-shadow:
+            0 0 0 3px
+            rgba(
+                59,
+                130,
+                246,
+                0.12
+            );
+    }
+
+
+    /* ============================================================
+       SIDEBAR
+       ============================================================ */
+
+    [data-testid="stSidebar"] {
+        background:
+            linear-gradient(
+                180deg,
+                #F8FBFF 0%,
+                #EDF3FA 100%
+            );
+
+        border-right:
+            1px solid
+            #D9E4EF;
+    }
+
+
+    .coi-sidebar-brand {
+        margin:
+            3px
+            0
+            26px
+            0;
+
+        padding:
+            14px
+            15px;
+
+        border:
+            1px solid
+            #D5E2F0;
+
+        border-radius:
+            13px;
+
+        background:
+            #FFFFFF;
+
+        box-shadow:
+            0 5px 18px
+            rgba(
+                20,
+                33,
+                61,
+                0.05
+            );
+    }
+
+
+    .coi-sidebar-brand-main {
+        display: block;
+
+        color:
+            #2563EB;
+
+        font-size:
+            12px;
+
+        font-weight:
+            850;
+
+        letter-spacing:
+            0.12em;
+    }
+
+
+    .coi-sidebar-brand-sub {
+        display: block;
+
+        margin-top:
+            3px;
+
+        color:
+            #14213D;
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ============================================================
+       CAPTIONS / DIVIDERS / LINKS
+       ============================================================ */
+
+    [data-testid="stCaptionContainer"] {
+        color:
+            #7A8799
+            !important;
+    }
+
+
+    hr {
+        border:
+            none;
+
+        border-top:
+            1px solid
+            #DCE5EF;
+    }
+
+
+    a {
+        color:
+            #2563EB
+            !important;
+    }
+
+
+    /* ============================================================
+       MOBILE / SMALL SCREENS
+       ============================================================ */
+
+    @media (
+        max-width: 850px
+    ) {
+
+        .coi-flow {
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+
+        .coi-hero {
+            padding:
+                28px
+                24px;
+        }
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
 # ================================================================
 # FORMATTERS
 # ================================================================
@@ -305,11 +1018,64 @@ universe_intelligence = pd.DataFrame(
 # HEADER
 # ================================================================
 
-st.title("Capital Origination Intelligence")
+hero_html = (
+    '<div class="coi-hero">'
+    '<div class="coi-eyebrow">ECM ORIGINATION • ANALYST ASSIST</div>'
+    '<div class="coi-hero-title">Capital Origination Intelligence</div>'
+    '<div class="coi-hero-subtitle">Surface. Prioritise. Monitor. Investigate.</div>'
+    '<div class="coi-hero-copy">'
+    'Public-data screening, market intelligence, change detection and '
+    'human-in-the-loop diligence designed to support the origination '
+    'workflow — without replacing analyst judgment.'
+    '</div>'
+    '<div class="coi-badge-row">'
+    '<span class="coi-badge">EXPLAINABLE RULES</span>'
+    '<span class="coi-badge">EVIDENCE-BACKED</span>'
+    '<span class="coi-badge">HUMAN IN THE LOOP</span>'
+    '<span class="coi-badge">CHANGE-AWARE</span>'
+    '</div>'
+    '</div>'
+)
 
-st.caption(
-    "Public-data screening and research support for "
-    "equity capital markets origination."
+st.markdown(
+    hero_html,
+    unsafe_allow_html=True,
+)
+
+
+flow_html = (
+    '<div class="coi-flow">'
+
+    '<div class="coi-flow-card">'
+    '<span class="coi-flow-number">01</span>'
+    '<span class="coi-flow-title">FIND</span>'
+    '<span class="coi-flow-copy">Surface the universe</span>'
+    '</div>'
+
+    '<div class="coi-flow-card">'
+    '<span class="coi-flow-number">02</span>'
+    '<span class="coi-flow-title">TEST</span>'
+    '<span class="coi-flow-copy">Machine + analyst diligence</span>'
+    '</div>'
+
+    '<div class="coi-flow-card">'
+    '<span class="coi-flow-number">03</span>'
+    '<span class="coi-flow-title">MONITOR</span>'
+    '<span class="coi-flow-copy">Detect material change</span>'
+    '</div>'
+
+    '<div class="coi-flow-card">'
+    '<span class="coi-flow-number">04</span>'
+    '<span class="coi-flow-title">ENGAGE</span>'
+    '<span class="coi-flow-copy">Support origination judgment</span>'
+    '</div>'
+
+    '</div>'
+)
+
+st.markdown(
+    flow_html,
+    unsafe_allow_html=True,
 )
 
 
@@ -318,16 +1084,47 @@ st.caption(
 # ================================================================
 
 with st.sidebar:
+
+    sidebar_brand_html = (
+        '<div class="coi-sidebar-brand">'
+        '<span class="coi-sidebar-brand-main">COI</span>'
+        '<span class="coi-sidebar-brand-sub">'
+        'Capital Origination Intelligence'
+        '</span>'
+        '</div>'
+    )
+
+    st.markdown(
+        sidebar_brand_html,
+        unsafe_allow_html=True,
+    )
+
     st.header("Company Review")
 
     company_options = companies.sort_values(
         "ticker"
     ).copy()
 
+    company_short_names = {
+        "FAL": "Falcon Metals",
+        "BGD": "Barton Gold",
+        "QGL": "Quantum Graphite",
+        "EGR": "EcoGraf",
+        "MEI": "Meteoric Resources",
+        "MMA": "Maronan Metals",
+        "EL8": "Elevate Uranium",
+        "LRV": "Larvotto Resources",
+    }
+
+
     company_options["selector_label"] = (
         company_options["ticker"]
         + " — "
-        + company_options["company_name"]
+        + company_options["ticker"].map(
+            company_short_names
+        ).fillna(
+            company_options["company_name"]
+        )
     )
 
     selected_label = st.selectbox(
@@ -344,8 +1141,9 @@ with st.sidebar:
     st.divider()
 
     st.caption(
-        "Review funding timing, market fundability, "
-        "catalysts and supporting evidence."
+        "The selector controls the detailed Company Review below. "
+        "Universe-level pipeline, shortlist and monitoring outputs "
+        "remain common across selections."
     )
 
 
@@ -424,11 +1222,16 @@ pipeline_display = pipeline_display.rename(
 )
 
 
-st.dataframe(
-    pipeline_display,
-    width="stretch",
-    hide_index=True,
-)
+with st.expander(
+    "View Full Origination Pipeline",
+    expanded=False,
+):
+
+    st.dataframe(
+        pipeline_display,
+        width="stretch",
+        hide_index=True,
+    )
 
 
 st.caption(
@@ -505,7 +1308,7 @@ formal_shortlist = committee[
 if formal_shortlist.empty:
 
     st.warning(
-        "No companies currently qualify for the formal shortlist."
+        "No companies currently qualify for the further-review shortlist."
     )
 
 else:
@@ -519,7 +1322,7 @@ else:
     )
 
     st.success(
-        "Formal Shortlist: "
+        "Shortlist for Further Review: "
         + " • ".join(
             shortlist_tickers
         )
@@ -648,18 +1451,31 @@ else:
     ].copy()
 
 
+    comparison_display[
+        "flagship_ready"
+    ] = comparison_display[
+        "flagship_ready"
+    ].apply(
+        lambda value: (
+            "YES"
+            if bool(value)
+            else "—"
+        )
+    )
+
+
     comparison_display = comparison_display.rename(
         columns={
             "ticker": "Ticker",
             "funding_timing": "Funding Timing",
             "fundability": "Fundability",
             "catalyst_visibility": "Catalyst",
-            "data_confidence": "Machine Confidence",
+            "data_confidence": "Stage 1 Evidence Confidence",
             "equity_relevance": "Equity Relevance",
             "financing_complexity": "Financing Complexity",
             "time_horizon": "Time Horizon",
             "origination_actionability": "Actionability",
-            "flagship_ready": "Flagship Ready",
+            "flagship_ready": "Illustrative Case?",
         }
     )
 
@@ -676,14 +1492,14 @@ else:
 # ------------------------------------------------------------
 
 st.markdown(
-    "### Flagship Opportunity"
+    "### Illustrative Flagship Case"
 )
 
 
 if flagship is None:
 
     st.warning(
-        "No unique flagship currently satisfies all transparent "
+        "No unique illustrative case currently satisfies all transparent "
         "selection conditions. Analyst judgment is required."
     )
 
@@ -748,8 +1564,9 @@ else:
 
 
 st.caption(
-    "Flagship selection is based on transparent origination "
-    "conditions, not a predictive financing score or investment ranking."
+    "This is a worked example selected by transparent prototype "
+    "conditions to demonstrate the system's output. It is not a "
+    "company recommendation, predictive financing score or investment ranking."
 )
 
 st.divider()
@@ -760,12 +1577,12 @@ st.divider()
 # ================================================================
 
 st.markdown(
-    "## Flagship Origination Brief"
+    "## Illustrative Origination Brief"
 )
 
 st.caption(
-    "Executive origination view generated from the flagship "
-    "selection, machine intelligence and Stage 2 analyst diligence."
+    "Worked example showing how machine intelligence and Stage 2 "
+    "analyst diligence can be converted into an origination action brief."
 )
 
 
@@ -782,6 +1599,7 @@ else:
     # ------------------------------------------------------------
 
     st.success(
+        "WORKED EXAMPLE  |  "
         f"{flagship_brief['ticker']} — "
         f"{flagship_brief['company']}  |  "
         f"{flagship_brief['positioning']}"
@@ -802,6 +1620,23 @@ else:
     # ------------------------------------------------------------
     # CORE FLAGSHIP METRICS
     # ------------------------------------------------------------
+
+    confidence_display = {
+        "MODERATE-HIGH": "MOD-HIGH",
+        "MODERATE": "MODERATE",
+        "HIGH": "HIGH",
+        "LOW": "LOW",
+    }.get(
+        str(
+            flagship_brief[
+                "confidence"
+            ]
+        ).upper(),
+        flagship_brief[
+            "confidence"
+        ],
+    )
+
 
     brief1, brief2, brief3, brief4 = st.columns(4)
 
@@ -844,10 +1679,8 @@ else:
     with brief4:
 
         st.metric(
-            "Stage 2 Confidence",
-            flagship_brief[
-                "confidence"
-            ],
+            "Analyst Confidence",
+            confidence_display,
         )
 
 
@@ -942,10 +1775,15 @@ else:
         expanded=False,
     ):
 
-        st.write(
-            flagship_brief[
-                "capital_markets_case"
-            ]
+        st.markdown(
+            str(
+                flagship_brief[
+                    "capital_markets_case"
+                ]
+            ).replace(
+                "$",
+                r"\$",
+            )
         )
 
 
@@ -1069,9 +1907,9 @@ else:
 
 
 st.caption(
-    "The flagship brief is an origination-research output. "
-    "It is not an investment recommendation or a prediction "
-    "that a financing event will occur."
+    "The illustrative brief demonstrates a possible origination "
+    "research output. It is not a company recommendation, investment "
+    "recommendation or prediction that a financing event will occur."
 )
 
 st.divider()
@@ -1259,11 +2097,16 @@ universe_display = universe_display.rename(
 )
 
 
-st.dataframe(
-    universe_display,
-    width="stretch",
-    hide_index=True,
-)
+with st.expander(
+    "View Full Screening Universe",
+    expanded=False,
+):
+
+    st.dataframe(
+        universe_display,
+        width="stretch",
+        hide_index=True,
+    )
 
 
 st.caption(
@@ -1602,7 +2445,7 @@ with machine3:
 
 with machine4:
     st.markdown(
-        "**Confidence**"
+        "**Stage 1 Evidence Confidence**"
     )
 
     st.write(
@@ -1624,7 +2467,7 @@ st.write(
 
 
 st.markdown(
-    "#### Recommended Machine Action"
+    "#### Machine-Suggested Next Step"
 )
 
 st.write(
@@ -1744,7 +2587,7 @@ else:
         )
 
     with stage_status2:
-        st.markdown("**Confidence**")
+        st.markdown("**Analyst Confidence**")
         st.write(
             clean_text(
                 deep_dive["confidence"]
