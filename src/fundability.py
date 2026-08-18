@@ -434,6 +434,9 @@ def assess_fundability(company, market):
 # ================================================================
 # INTEGRATED ORIGINATION VIEW
 # ================================================================
+# ================================================================
+# INTEGRATED ORIGINATION VIEW
+# ================================================================
 
 def integrate_origination_view(
     timing_assessment,
@@ -442,14 +445,17 @@ def integrate_origination_view(
     """
     Combine financing timing with preliminary fundability.
 
-    This is the key distinction between:
-    needing capital
-    and
-    being plausibly financeable.
+    Recent financing is explicitly considered before escalation.
+    This prevents a recently funded company from becoming a
+    priority solely because a reported runway metric is tight.
     """
 
     funding = timing_assessment[
         "funding_timing"
+    ]
+
+    financing = timing_assessment[
+        "financing_recency"
     ]
 
     catalyst = timing_assessment[
@@ -464,15 +470,49 @@ def integrate_origination_view(
         "fundability"
     ]
 
+
+    # ------------------------------------------------------------
+    # EVIDENCE CONTROL
+    # ------------------------------------------------------------
+
     if (
         funding == "INSUFFICIENT EVIDENCE"
         or fundability == "INSUFFICIENT EVIDENCE"
     ):
         return "INSUFFICIENT EVIDENCE"
 
-    # High/elevated funding timing only becomes the strongest
-    # origination signal when the company also appears financeable.
+
+    # ------------------------------------------------------------
+    # RECENTLY FUNDED COMPANIES
+    # ------------------------------------------------------------
+
+    # A recent financing materially changes origination timing.
+    # Moderate/low funding pressure after a recent raise is
+    # generally lower priority.
+
+    if financing == "RECENT":
+
+        if funding in {"LOW", "MODERATE"}:
+            return "LOWER CURRENT PRIORITY"
+
+        # Elevated/high reported funding pressure immediately
+        # after a raise can reflect an intensive work program.
+        # It warrants monitoring rather than automatic escalation.
+
+        if funding in {"ELEVATED", "HIGH"}:
+
+            if fundability == "WEAK":
+                return "MONITOR — FUNDABILITY CONSTRAINT"
+
+            return "MONITOR — RECENTLY FUNDED"
+
+
+    # ------------------------------------------------------------
+    # HIGH / ELEVATED FUNDING TIMING
+    # ------------------------------------------------------------
+
     if funding in {"HIGH", "ELEVATED"}:
+
         if (
             fundability in {"STRONG", "MODERATE"}
             and catalyst in {"HIGH", "MODERATE"}
@@ -482,13 +522,22 @@ def integrate_origination_view(
         if fundability == "WEAK":
             return "MONITOR — FUNDABILITY CONSTRAINT"
 
-    # Preserve early-engagement timing only where fundability
-    # does not appear materially constrained.
+
+    # ------------------------------------------------------------
+    # EARLY ENGAGEMENT
+    # ------------------------------------------------------------
+
     if timing_view == "EARLY ENGAGEMENT REVIEW":
+
         if fundability in {"STRONG", "MODERATE"}:
             return "EARLY ENGAGEMENT REVIEW"
 
         return "MONITOR — FUNDABILITY CONSTRAINT"
+
+
+    # ------------------------------------------------------------
+    # REMAINING TIMING STATES
+    # ------------------------------------------------------------
 
     if timing_view == "LOWER CURRENT PRIORITY":
         return "LOWER CURRENT PRIORITY"
