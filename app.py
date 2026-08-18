@@ -2,10 +2,16 @@ import pandas as pd
 import streamlit as st
 
 from src.data_loader import (
+    load_companies,
+    load_sources,
     get_company,
     get_company_sources,
 )
 
+
+# ================================================================
+# PAGE CONFIGURATION
+# ================================================================
 
 st.set_page_config(
     page_title="Capital Origination Intelligence",
@@ -14,161 +20,413 @@ st.set_page_config(
 )
 
 
+# ================================================================
+# HELPER FUNCTIONS
+# ================================================================
+
+def format_money(value, decimals=1):
+    """Format a numeric value stored in AUD millions."""
+    if pd.isna(value):
+        return "Not available"
+
+    return f"A${value:.{decimals}f}m"
+
+
+def format_price(value):
+    """Format an AUD share price."""
+    if pd.isna(value):
+        return "Not available"
+
+    return f"A${value:.3f}"
+
+
+def format_quarters(value):
+    """Format reported quarters of funding."""
+    if pd.isna(value):
+        return "Not available"
+
+    return f"{value:.1f} quarters"
+
+
+def clean_text(value, fallback="Not available"):
+    """Return readable text for optional fields."""
+    if pd.isna(value):
+        return fallback
+
+    text = str(value).strip()
+
+    if not text:
+        return fallback
+
+    return text
+
+
+# ================================================================
+# LOAD DATA
+# ================================================================
+
+companies = load_companies()
+all_sources = load_sources()
+
+if companies.empty:
+    st.error("No companies found in the screening universe.")
+    st.stop()
+
+
+# ================================================================
+# HEADER
+# ================================================================
+
 st.title("Capital Origination Intelligence")
+
 st.caption(
-    "Public-data screening and research support for equity capital markets origination."
+    "Public-data screening and research support for "
+    "equity capital markets origination."
 )
 
 
-# -------------------------------------------------------------------
-# COMPANY SELECTION
-# -------------------------------------------------------------------
+# ================================================================
+# SIDEBAR
+# ================================================================
 
-ticker = "FAL"
+with st.sidebar:
+    st.header("Company Review")
 
-company = get_company(ticker)
-sources = get_company_sources(ticker)
+    company_options = companies.sort_values("ticker").copy()
+
+    company_options["selector_label"] = (
+        company_options["ticker"]
+        + " — "
+        + company_options["company_name"]
+    )
+
+    selected_label = st.selectbox(
+        "Select company",
+        company_options["selector_label"].tolist(),
+    )
+
+    selected_ticker = company_options.loc[
+        company_options["selector_label"] == selected_label,
+        "ticker",
+    ].iloc[0]
+
+    st.divider()
+
+    st.caption(
+        "Select a company from the screening universe "
+        "to review its funding position, catalysts and evidence."
+    )
+
+
+# ================================================================
+# UNIVERSE SUMMARY
+# ================================================================
+
+st.markdown("## Screening Universe")
+
+summary1, summary2, summary3, summary4 = st.columns(4)
+
+with summary1:
+    st.metric(
+        "Companies Screened",
+        len(companies),
+    )
+
+with summary2:
+    st.metric(
+        "Commodities",
+        companies["commodity"].nunique(),
+    )
+
+with summary3:
+    st.metric(
+        "Evidence Records",
+        len(all_sources),
+    )
+
+with summary4:
+    verified_total = int(all_sources["verified"].sum())
+
+    st.metric(
+        "Verified Evidence",
+        verified_total,
+    )
+
+
+# ================================================================
+# UNIVERSE TABLE
+# ================================================================
+
+universe_display = companies[
+    [
+        "ticker",
+        "company_name",
+        "commodity",
+        "market_cap_aud_m",
+        "cash_aud_m",
+        "reported_quarters_funding",
+        "next_catalyst",
+        "catalyst_timing",
+    ]
+].copy()
+
+
+universe_display["market_cap_aud_m"] = universe_display[
+    "market_cap_aud_m"
+].apply(
+    lambda x: format_money(x, 1)
+)
+
+
+universe_display["cash_aud_m"] = universe_display[
+    "cash_aud_m"
+].apply(
+    lambda x: format_money(x, 3)
+)
+
+
+universe_display["reported_quarters_funding"] = universe_display[
+    "reported_quarters_funding"
+].apply(
+    format_quarters
+)
+
+
+universe_display = universe_display.rename(
+    columns={
+        "ticker": "Ticker",
+        "company_name": "Company",
+        "commodity": "Commodity",
+        "market_cap_aud_m": "Market Cap",
+        "cash_aud_m": "Cash",
+        "reported_quarters_funding": "Reported Funding",
+        "next_catalyst": "Next Catalyst",
+        "catalyst_timing": "Catalyst Timing",
+    }
+)
+
+
+st.dataframe(
+    universe_display,
+    width="stretch",
+    hide_index=True,
+)
+
+
+st.caption(
+    "The screening universe is intended to support analyst review. "
+    "It is not a ranking of investment attractiveness."
+)
+
+
+# ================================================================
+# SELECTED COMPANY
+# ================================================================
+
+company = get_company(selected_ticker)
+sources = get_company_sources(selected_ticker)
 
 if company is None:
-    st.error("Company not found.")
+    st.error("Selected company could not be loaded.")
     st.stop()
 
 
 st.divider()
 
 
-# -------------------------------------------------------------------
+# ================================================================
 # COMPANY HEADER
-# -------------------------------------------------------------------
+# ================================================================
 
-st.subheader(f"{company['company_name']} ({company['ticker']})")
+st.markdown(
+    f"## {company['company_name']} ({company['ticker']})"
+)
 
 st.caption(
-    f"{company['sector']} • {company['commodity']} • "
-    f"Data compiled as of {company['data_as_of']}"
+    f"{clean_text(company['sector'])} • "
+    f"{clean_text(company['commodity'])} • "
+    f"Data compiled as of {clean_text(company['data_as_of'])}"
 )
 
 
-# -------------------------------------------------------------------
+# ================================================================
 # KEY MARKET + FUNDING METRICS
-# -------------------------------------------------------------------
+# ================================================================
 
-col1, col2, col3, col4 = st.columns(4)
+metric1, metric2, metric3, metric4 = st.columns(4)
 
-with col1:
+with metric1:
     st.metric(
         "Share Price",
-        f"A${company['share_price_aud']:.3f}",
+        format_price(company["share_price_aud"]),
     )
 
-with col2:
+with metric2:
     st.metric(
         "Market Cap",
-        f"A${company['market_cap_aud_m']:.1f}m",
+        format_money(company["market_cap_aud_m"], 1),
     )
 
-with col3:
+with metric3:
     st.metric(
         "Cash",
-        f"A${company['cash_aud_m']:.3f}m",
+        format_money(company["cash_aud_m"], 3),
     )
 
-with col4:
+with metric4:
     st.metric(
         "Reported Funding",
-        f"{company['reported_quarters_funding']:.1f} quarters",
+        format_quarters(
+            company["reported_quarters_funding"]
+        ),
     )
 
 
-# -------------------------------------------------------------------
-# COMPANY RESEARCH
-# -------------------------------------------------------------------
+# ================================================================
+# PROGRAM + CATALYST
+# ================================================================
 
-left, right = st.columns(2)
+research_left, research_right = st.columns(2)
 
-with left:
+with research_left:
     st.markdown("### Planned Program")
-    st.write(company["planned_program"])
 
-with right:
+    st.write(
+        clean_text(
+            company["planned_program"],
+            "No planned program captured.",
+        )
+    )
+
+
+with research_right:
     st.markdown("### Next Catalyst")
-    st.write(company["next_catalyst"])
 
-    if pd.notna(company["catalyst_timing"]):
-        st.caption(f"Timing: {company['catalyst_timing']}")
+    st.write(
+        clean_text(
+            company["next_catalyst"],
+            "No catalyst captured.",
+        )
+    )
+
+    catalyst_timing = clean_text(
+        company["catalyst_timing"],
+        "",
+    )
+
+    if catalyst_timing:
+        st.caption(
+            f"Timing: {catalyst_timing}"
+        )
 
 
-# -------------------------------------------------------------------
+# ================================================================
 # FUNDING POSITION
-# -------------------------------------------------------------------
+# ================================================================
 
 st.markdown("### Funding Position")
 
-funding_col1, funding_col2, funding_col3 = st.columns(3)
+funding1, funding2, funding3 = st.columns(3)
 
-with funding_col1:
+with funding1:
     st.metric(
         "Quarterly Operating Cash Flow",
-        f"A${company['quarterly_operating_cf_aud_m']:.3f}m",
+        format_money(
+            company["quarterly_operating_cf_aud_m"],
+            3,
+        ),
     )
 
-with funding_col2:
+with funding2:
     st.metric(
         "Exploration / Development Spend",
-        f"A${company['exploration_development_spend_aud_m']:.3f}m",
+        format_money(
+            company["exploration_development_spend_aud_m"],
+            3,
+        ),
     )
 
-with funding_col3:
-    debt = company["debt_facilities_aud_m"]
-
-    if pd.notna(debt):
-        st.metric(
-            "Debt / Facilities",
-            f"A${debt:.1f}m",
-        )
-    else:
-        st.metric(
-            "Debt / Facilities",
-            "Not disclosed",
-        )
+with funding3:
+    st.metric(
+        "Debt / Facilities",
+        format_money(
+            company["debt_facilities_aud_m"],
+            1,
+        ),
+    )
 
 
-# -------------------------------------------------------------------
+# ================================================================
 # RECENT FINANCING
-# -------------------------------------------------------------------
+# ================================================================
 
 st.markdown("### Recent Financing")
 
-raise_text = (
-    f"Last recorded raise: A${company['last_raise_amount_aud_m']:.1f}m "
-    f"{company['last_raise_type']} at "
-    f"A${company['last_raise_price_aud']:.2f} per share "
-    f"on {company['last_raise_date']}."
+raise_amount = company["last_raise_amount_aud_m"]
+raise_price = company["last_raise_price_aud"]
+raise_type = company["last_raise_type"]
+raise_date = company["last_raise_date"]
+
+
+if (
+    pd.notna(raise_amount)
+    and pd.notna(raise_price)
+    and pd.notna(raise_type)
+    and pd.notna(raise_date)
+):
+    raise_text = (
+        f"Last recorded raise: "
+        f"A${raise_amount:.1f}m "
+        f"{raise_type} at "
+        f"A${raise_price:.2f} per share "
+        f"on {raise_date}."
+    )
+
+    st.text(raise_text)
+
+else:
+    st.write(
+        "No complete recent financing record captured."
+    )
+
+
+lead_manager = clean_text(
+    company["lead_manager"],
+    "",
 )
 
-st.text(raise_text)
+if lead_manager:
+    st.caption(
+        f"Lead manager / broker: {lead_manager}"
+    )
 
 
-# -------------------------------------------------------------------
+# ================================================================
 # EVIDENCE LEDGER
-# -------------------------------------------------------------------
+# ================================================================
 
 st.markdown("### Evidence Ledger")
 
 verified_count = int(sources["verified"].sum())
 unverified_count = len(sources) - verified_count
 
-evidence_col1, evidence_col2 = st.columns(2)
+evidence1, evidence2, evidence3 = st.columns(3)
 
-with evidence_col1:
+with evidence1:
     st.metric(
-        "Verified Evidence",
+        "Evidence Records",
+        len(sources),
+    )
+
+with evidence2:
+    st.metric(
+        "Verified",
         verified_count,
     )
 
-with evidence_col2:
+with evidence3:
     st.metric(
-        "Awaiting Primary Verification",
+        "Awaiting Verification",
         unverified_count,
     )
 
@@ -186,6 +444,19 @@ display_sources = sources[
 ].copy()
 
 
+display_sources = display_sources.rename(
+    columns={
+        "field_name": "Field",
+        "source_type": "Source Type",
+        "source_title": "Source",
+        "source_date": "Date",
+        "reported_value": "Reported Value",
+        "verified": "Verified",
+        "source_url": "Source URL",
+    }
+)
+
+
 st.dataframe(
     display_sources,
     width="stretch",
@@ -193,7 +464,15 @@ st.dataframe(
 )
 
 
+# ================================================================
+# DISCLAIMER
+# ================================================================
+
+st.divider()
+
 st.caption(
-    "This prototype is an origination-support research tool, "
-    "not an investment recommendation."
+    "Capital Origination Intelligence is a public-data "
+    "origination-support research prototype. "
+    "It does not provide investment recommendations "
+    "or predict that a company will undertake a capital raising."
 )
