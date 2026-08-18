@@ -41,6 +41,11 @@ from src.committee import (
     committee_counts,
 )
 
+from src.shortlist import (
+    build_shortlist_comparison,
+    select_flagship,
+)
+
 
 # ================================================================
 # PAGE CONFIGURATION
@@ -137,6 +142,17 @@ committee = build_opportunity_committee(
 
 committee_summary = committee_counts(
     committee
+)
+
+shortlist_comparison = build_shortlist_comparison(
+    committee,
+    companies,
+    all_sources,
+    market_data,
+)
+
+flagship = select_flagship(
+    shortlist_comparison
 )
 
 
@@ -512,6 +528,152 @@ with st.expander(
 st.caption(
     "Shortlist placement is an origination workflow decision, "
     "not an investment recommendation."
+)
+
+st.divider()
+
+
+# ================================================================
+# SHORTLIST COMPARISON
+# ================================================================
+
+st.markdown(
+    "## Shortlist Comparison"
+)
+
+st.caption(
+    "Commercial comparison of shortlisted opportunities using "
+    "transparent categorical criteria rather than a weighted score."
+)
+
+
+if shortlist_comparison.empty:
+
+    st.info(
+        "No shortlisted companies are currently available "
+        "for comparison."
+    )
+
+else:
+
+    comparison_display = shortlist_comparison[
+        [
+            "ticker",
+            "funding_timing",
+            "fundability",
+            "catalyst_visibility",
+            "data_confidence",
+            "equity_relevance",
+            "financing_complexity",
+            "time_horizon",
+            "origination_actionability",
+            "flagship_ready",
+        ]
+    ].copy()
+
+
+    comparison_display = comparison_display.rename(
+        columns={
+            "ticker": "Ticker",
+            "funding_timing": "Funding Timing",
+            "fundability": "Fundability",
+            "catalyst_visibility": "Catalyst",
+            "data_confidence": "Machine Confidence",
+            "equity_relevance": "Equity Relevance",
+            "financing_complexity": "Financing Complexity",
+            "time_horizon": "Time Horizon",
+            "origination_actionability": "Actionability",
+            "flagship_ready": "Flagship Ready",
+        }
+    )
+
+
+    st.dataframe(
+        comparison_display,
+        width="stretch",
+        hide_index=True,
+    )
+
+
+# ------------------------------------------------------------
+# FLAGSHIP
+# ------------------------------------------------------------
+
+st.markdown(
+    "### Flagship Opportunity"
+)
+
+
+if flagship is None:
+
+    st.warning(
+        "No unique flagship currently satisfies all transparent "
+        "selection conditions. Analyst judgment is required."
+    )
+
+else:
+
+    st.success(
+        f"{flagship['ticker']} — "
+        f"{flagship['company']}"
+    )
+
+
+    flagship1, flagship2, flagship3, flagship4 = (
+        st.columns(4)
+    )
+
+
+    with flagship1:
+        st.metric(
+            "Fundability",
+            flagship[
+                "fundability"
+            ],
+        )
+
+
+    with flagship2:
+        st.metric(
+            "Equity Relevance",
+            flagship[
+                "equity_relevance"
+            ],
+        )
+
+
+    with flagship3:
+        st.metric(
+            "Actionability",
+            flagship[
+                "origination_actionability"
+            ],
+        )
+
+
+    with flagship4:
+        st.metric(
+            "Financing Complexity",
+            flagship[
+                "financing_complexity"
+            ],
+        )
+
+
+    st.markdown(
+        "**Why it leads**"
+    )
+
+    st.write(
+        flagship[
+            "comparison_rationale"
+        ]
+    )
+
+
+st.caption(
+    "Flagship selection is based on transparent origination "
+    "conditions, not a predictive financing score or investment ranking."
 )
 
 st.divider()
