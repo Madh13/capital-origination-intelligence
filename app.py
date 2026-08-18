@@ -8,6 +8,11 @@ from src.data_loader import (
     get_company_sources,
 )
 
+from src.intelligence import (
+    assess_company,
+    assess_universe,
+)
+
 
 # ================================================================
 # PAGE CONFIGURATION
@@ -58,7 +63,7 @@ def clean_text(value, fallback="Not available"):
 
 
 # ================================================================
-# LOAD DATA
+# LOAD DATA + INTELLIGENCE
 # ================================================================
 
 companies = load_companies()
@@ -67,6 +72,12 @@ all_sources = load_sources()
 if companies.empty:
     st.error("No companies found in the screening universe.")
     st.stop()
+
+
+universe_intelligence = assess_universe(
+    companies,
+    all_sources,
+)
 
 
 # ================================================================
@@ -109,8 +120,9 @@ with st.sidebar:
     st.divider()
 
     st.caption(
-        "Select a company from the screening universe "
-        "to review its funding position, catalysts and evidence."
+        "Select a company to review its funding position, "
+        "catalysts, preliminary origination intelligence "
+        "and supporting evidence."
     )
 
 
@@ -123,13 +135,22 @@ st.markdown("## Screening Universe")
 summary1, summary2, summary3, summary4 = st.columns(4)
 
 with summary1:
-    st.metric("Companies Screened", len(companies))
+    st.metric(
+        "Companies Screened",
+        len(companies),
+    )
 
 with summary2:
-    st.metric("Commodities", companies["commodity"].nunique())
+    st.metric(
+        "Commodity Profiles",
+        companies["commodity"].nunique(),
+    )
 
 with summary3:
-    st.metric("Evidence Records", len(all_sources))
+    st.metric(
+        "Evidence Records",
+        len(all_sources),
+    )
 
 with summary4:
     st.metric(
@@ -139,7 +160,7 @@ with summary4:
 
 
 # ================================================================
-# UNIVERSE TABLE
+# UNIVERSE TABLE + INTELLIGENCE
 # ================================================================
 
 universe_display = companies[
@@ -151,9 +172,22 @@ universe_display = companies[
         "cash_aud_m",
         "reported_quarters_funding",
         "next_catalyst",
-        "catalyst_timing",
     ]
 ].copy()
+
+
+universe_display = universe_display.merge(
+    universe_intelligence[
+        [
+            "ticker",
+            "funding_timing",
+            "data_confidence",
+            "opportunity_timing",
+        ]
+    ],
+    on="ticker",
+    how="left",
+)
 
 
 universe_display["market_cap_aud_m"] = universe_display[
@@ -184,7 +218,9 @@ universe_display = universe_display.rename(
         "cash_aud_m": "Cash",
         "reported_quarters_funding": "Reported Funding",
         "next_catalyst": "Next Catalyst",
-        "catalyst_timing": "Catalyst Timing",
+        "funding_timing": "Funding Timing",
+        "data_confidence": "Data Confidence",
+        "opportunity_timing": "Preliminary Timing",
     }
 )
 
@@ -197,8 +233,9 @@ st.dataframe(
 
 
 st.caption(
-    "The screening universe supports analyst review. "
-    "It is not a ranking of investment attractiveness."
+    "Preliminary timing categories are transparent screening "
+    "heuristics for analyst review. They are not predictions "
+    "of a capital raising or rankings of investment attractiveness."
 )
 
 
@@ -212,6 +249,12 @@ sources = get_company_sources(selected_ticker)
 if company is None:
     st.error("Selected company could not be loaded.")
     st.stop()
+
+
+assessment = assess_company(
+    company,
+    sources,
+)
 
 
 st.divider()
@@ -263,6 +306,69 @@ with metric4:
             company["reported_quarters_funding"]
         ),
     )
+
+
+# ================================================================
+# ORIGINATION INTELLIGENCE
+# ================================================================
+
+st.markdown("### Origination Intelligence")
+
+intel1, intel2, intel3, intel4 = st.columns(4)
+
+with intel1:
+    st.metric(
+        "Funding Timing",
+        assessment["funding_timing"],
+    )
+
+with intel2:
+    st.metric(
+        "Catalyst Visibility",
+        assessment["catalyst_visibility"],
+    )
+
+with intel3:
+    st.metric(
+        "Financing Recency",
+        assessment["financing_recency"],
+    )
+
+with intel4:
+    st.metric(
+        "Data Confidence",
+        assessment["data_confidence"],
+    )
+
+
+st.info(
+    "Preliminary Opportunity Timing: "
+    f"{assessment['opportunity_timing']}"
+)
+
+
+intelligence_left, intelligence_right = st.columns(2)
+
+with intelligence_left:
+    st.markdown("#### Why It Surfaced")
+
+    for reason in assessment["reasons"]:
+        st.write(f"• {reason}")
+
+
+with intelligence_right:
+    st.markdown("#### Diligence Required")
+
+    for gap in assessment["diligence_gaps"]:
+        st.write(f"• {gap}")
+
+
+st.caption(
+    "This first intelligence layer evaluates timing, catalyst "
+    "visibility, financing recency and evidence confidence. "
+    "Complete fundability analysis will require additional "
+    "market-liquidity and trading inputs."
+)
 
 
 # ================================================================
@@ -415,10 +521,16 @@ unverified_count = len(sources) - verified_count
 evidence1, evidence2, evidence3 = st.columns(3)
 
 with evidence1:
-    st.metric("Evidence Records", len(sources))
+    st.metric(
+        "Evidence Records",
+        len(sources),
+    )
 
 with evidence2:
-    st.metric("Verified", verified_count)
+    st.metric(
+        "Verified",
+        verified_count,
+    )
 
 with evidence3:
     st.metric(
