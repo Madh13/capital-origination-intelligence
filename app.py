@@ -19,6 +19,11 @@ from src.fundability import (
     integrate_origination_view,
 )
 
+from src.pipeline import (
+    build_pipeline,
+    pipeline_counts,
+)
+
 
 # ================================================================
 # PAGE CONFIGURATION
@@ -83,6 +88,24 @@ market_data = load_market_data()
 if companies.empty:
     st.error("No companies found.")
     st.stop()
+
+
+# ================================================================
+# BUILD ORIGINATION PIPELINE
+# ================================================================
+
+pipeline = build_pipeline(
+    companies,
+    market_data,
+    all_sources,
+    assess_company,
+    assess_fundability,
+    integrate_origination_view,
+)
+
+pipeline_summary = pipeline_counts(
+    pipeline
+)
 
 
 # ================================================================
@@ -200,6 +223,97 @@ with st.sidebar:
         "Review funding timing, market fundability, "
         "catalysts and supporting evidence."
     )
+
+
+# ================================================================
+# ORIGINATION PIPELINE
+# ================================================================
+
+st.markdown("## Origination Pipeline")
+
+st.caption(
+    "Analyst-review queue generated from funding timing, "
+    "market fundability, catalyst visibility and financing context."
+)
+
+
+pipe1, pipe2, pipe3, pipe4 = st.columns(4)
+
+with pipe1:
+    st.metric(
+        "Active Review",
+        pipeline_summary[
+            "active_review"
+        ],
+    )
+
+with pipe2:
+    st.metric(
+        "Monitor",
+        pipeline_summary[
+            "monitor"
+        ],
+    )
+
+with pipe3:
+    st.metric(
+        "Lower Priority",
+        pipeline_summary[
+            "lower_priority"
+        ],
+    )
+
+with pipe4:
+    st.metric(
+        "Incomplete Diligence",
+        pipeline_summary[
+            "insufficient"
+        ],
+    )
+
+
+pipeline_display = pipeline[
+    [
+        "pipeline_stage",
+        "ticker",
+        "company",
+        "commodity",
+        "funding_timing",
+        "fundability",
+        "rationale",
+        "analyst_action",
+    ]
+].copy()
+
+
+pipeline_display = pipeline_display.rename(
+    columns={
+        "pipeline_stage": "Pipeline Stage",
+        "ticker": "Ticker",
+        "company": "Company",
+        "commodity": "Commodity",
+        "funding_timing": "Funding Timing",
+        "fundability": "Fundability",
+        "rationale": "Why Here",
+        "analyst_action": "Next Analyst Action",
+    }
+)
+
+
+st.dataframe(
+    pipeline_display,
+    width="stretch",
+    hide_index=True,
+)
+
+
+st.caption(
+    "Pipeline placement is an origination-workflow signal, "
+    "not an investment ranking or prediction of a financing event."
+)
+
+
+st.divider()
 
 
 # ================================================================
