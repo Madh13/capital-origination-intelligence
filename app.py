@@ -10,6 +10,7 @@ from src.data_loader import (
     get_market_snapshot,
     get_deep_dive,
     get_deep_dive_evidence,
+    load_state_history,
 )
 
 from src.intelligence import (
@@ -24,6 +25,14 @@ from src.fundability import (
 from src.pipeline import (
     build_pipeline,
     pipeline_counts,
+)
+
+from src.history import (
+    analyse_latest_changes,
+)
+
+from src.prebrief import (
+    build_machine_prebrief,
 )
 
 
@@ -86,6 +95,11 @@ def clean_text(value, fallback="Not available"):
 companies = load_companies()
 all_sources = load_sources()
 market_data = load_market_data()
+state_history = load_state_history()
+
+history_analysis = analyse_latest_changes(
+    state_history
+)
 
 if companies.empty:
     st.error("No companies found.")
@@ -319,6 +333,123 @@ st.divider()
 
 
 # ================================================================
+# UNIVERSE CHANGE MONITOR
+# ================================================================
+
+changes = history_analysis[
+    "changes"
+]
+
+movements = history_analysis[
+    "movements"
+]
+
+
+with st.expander(
+    "Universe Change Monitor",
+    expanded=False,
+):
+
+    st.caption(
+        "Material changes across the full screening universe "
+        "between the two most recent stored machine snapshots."
+    )
+
+
+    if changes.empty:
+
+        st.write(
+            "No material universe-level changes detected."
+        )
+
+    else:
+
+        universe_change1, universe_change2 = st.columns(2)
+
+        with universe_change1:
+            st.metric(
+                "Companies Changed",
+                changes[
+                    "ticker"
+                ].nunique(),
+            )
+
+        with universe_change2:
+            st.metric(
+                "Pipeline Movements",
+                len(
+                    movements
+                ),
+            )
+
+
+        if not movements.empty:
+
+            movement_display = movements[
+                [
+                    "ticker",
+                    "old_value",
+                    "new_value",
+                ]
+            ].copy()
+
+
+            movement_display = (
+                movement_display.rename(
+                    columns={
+                        "ticker": "Ticker",
+                        "old_value": "Previous View",
+                        "new_value": "Current View",
+                    }
+                )
+            )
+
+
+            st.dataframe(
+                movement_display,
+                width="stretch",
+                hide_index=True,
+            )
+
+
+        with st.expander(
+            "Full Universe Change Audit",
+            expanded=False,
+        ):
+
+            audit = changes[
+                [
+                    "ticker",
+                    "field",
+                    "old_value",
+                    "new_value",
+                    "change_type",
+                ]
+            ].copy()
+
+
+            audit = audit.rename(
+                columns={
+                    "ticker": "Ticker",
+                    "field": "Changed Field",
+                    "old_value": "Previous",
+                    "new_value": "Current",
+                    "change_type": "Change Type",
+                }
+            )
+
+
+            st.dataframe(
+                audit,
+                width="stretch",
+                hide_index=True,
+            )
+
+
+st.divider()
+
+
+# ================================================================
 # SCREENING UNIVERSE
 # ================================================================
 
@@ -434,6 +565,22 @@ fundability = assess_fundability(
 integrated_view = integrate_origination_view(
     timing,
     fundability,
+)
+
+selected_change_brief = (
+    history_analysis[
+        "briefs"
+    ].get(
+        selected_ticker
+    )
+)
+
+machine_prebrief = build_machine_prebrief(
+    selected_ticker,
+    timing,
+    fundability,
+    integrated_view,
+    selected_change_brief,
 )
 
 
@@ -650,6 +797,165 @@ st.caption(
     "Prototype fundability categories use transparent "
     "internal screening thresholds. They are not claimed "
     "industry standards and remain subject to analyst judgment."
+)
+
+
+# ================================================================
+# MACHINE PRE-BRIEF
+# ================================================================
+
+st.divider()
+
+st.markdown(
+    "### Machine Pre-Brief"
+)
+
+st.caption(
+    "Automatically generated from structured company data, "
+    "market data, evidence quality and the rules-based "
+    "origination engine. Human Stage 2 judgment remains separate."
+)
+
+
+machine1, machine2, machine3, machine4 = st.columns(4)
+
+with machine1:
+    st.markdown(
+        "**Machine View**"
+    )
+
+    st.write(
+        machine_prebrief[
+            "machine_view"
+        ]
+    )
+
+
+with machine2:
+    st.markdown(
+        "**Funding Timing**"
+    )
+
+    st.write(
+        machine_prebrief[
+            "funding_timing"
+        ]
+    )
+
+
+with machine3:
+    st.markdown(
+        "**Fundability**"
+    )
+
+    st.write(
+        machine_prebrief[
+            "fundability"
+        ]
+    )
+
+
+with machine4:
+    st.markdown(
+        "**Confidence**"
+    )
+
+    st.write(
+        machine_prebrief[
+            "data_confidence"
+        ]
+    )
+
+
+st.markdown(
+    "#### Machine Thesis"
+)
+
+st.write(
+    machine_prebrief[
+        "machine_thesis"
+    ]
+)
+
+
+st.markdown(
+    "#### Recommended Machine Action"
+)
+
+st.write(
+    machine_prebrief[
+        "recommended_machine_action"
+    ]
+)
+
+
+# ------------------------------------------------------------
+# SELECTED-COMPANY CHANGE
+# ------------------------------------------------------------
+
+st.markdown(
+    "#### Recent Machine Change"
+)
+
+if selected_change_brief:
+
+    st.info(
+        selected_change_brief
+    )
+
+else:
+
+    st.caption(
+        "No material change was detected for this company "
+        "between the two latest stored snapshots."
+    )
+
+
+# ------------------------------------------------------------
+# MACHINE EXPLAINABILITY
+# ------------------------------------------------------------
+
+with st.expander(
+    "Machine Rationale and Diligence Priorities",
+    expanded=False,
+):
+
+    rationale_left, rationale_right = st.columns(2)
+
+
+    with rationale_left:
+
+        st.markdown(
+            "##### Machine Rationale"
+        )
+
+        for reason in machine_prebrief[
+            "reasons"
+        ]:
+
+            st.write(
+                f"• {reason}"
+            )
+
+
+    with rationale_right:
+
+        st.markdown(
+            "##### Diligence Priorities"
+        )
+
+        for gap in machine_prebrief[
+            "diligence_priorities"
+        ]:
+
+            st.write(
+                f"• {gap}"
+            )
+
+
+st.caption(
+    "The Machine Pre-Brief is generated automatically. "
+    "It does not replace analyst review."
 )
 
 

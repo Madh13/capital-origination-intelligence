@@ -103,6 +103,26 @@ def load_deep_dive_evidence():
 
 
 # ================================================================
+# MACHINE STATE HISTORY
+# ================================================================
+
+def load_state_history():
+    """
+    Load historical machine-state snapshots.
+
+    Each snapshot records both structured inputs and the
+    machine interpretation produced from those inputs.
+    """
+
+    path = DATA_DIR / "state_history.csv"
+
+    if not path.exists():
+        return pd.DataFrame()
+
+    return pd.read_csv(path)
+
+
+# ================================================================
 # COMPANY LOOKUPS
 # ================================================================
 
